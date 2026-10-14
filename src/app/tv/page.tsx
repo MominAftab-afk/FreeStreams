@@ -1,0 +1,133 @@
+import React from 'react';
+import type { Metadata } from 'next';
+import Link from 'next/link';
+import { Tv, Filter, ChevronLeft, ChevronRight } from 'lucide-react';
+import MediaCard from '@/components/media/MediaCard';
+import { discoverTV, getTVGenres } from '@/lib/tmdb';
+
+export const metadata: Metadata = {
+  title: 'Watch TV Series Online Free in HD - RoseFlix',
+  description:
+    'Binge full seasons and episodes of top-rated TV shows, anime, and dramas online in HD. Free streaming across redundant servers with English subtitles.',
+};
+
+interface TVPageProps {
+  searchParams: Promise<{ genre?: string; page?: string; sort?: string }>;
+}
+
+export default async function TVCatalogPage({ searchParams }: TVPageProps) {
+  const sParams = await searchParams;
+  const selectedGenre = sParams.genre;
+  const currentPage = parseInt(sParams.page || '1', 10);
+  const sortBy = sParams.sort || 'popularity.desc';
+
+  const [genres, tvData] = await Promise.all([
+    getTVGenres(),
+    discoverTV({
+      genreId: selectedGenre,
+      sortBy,
+      page: currentPage,
+    }),
+  ]);
+
+  const shows = tvData.results.map((t) => ({ ...t, media_type: 'tv' as const }));
+  const totalPages = Math.min(tvData.total_pages, 500);
+
+  const activeGenreName = genres.find((g) => g.id.toString() === selectedGenre)?.name;
+
+  return (
+    <div className="min-h-screen pt-24 pb-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      {/* Page Title & Header */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
+        <div>
+          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#FF85A1] mb-1.5">
+            <Tv className="w-4 h-4 text-[#FF1E56]" />
+            Series Catalog
+          </div>
+          <h1 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
+            {activeGenreName ? `${activeGenreName} TV Series` : 'All TV Shows'}
+          </h1>
+          <p className="text-sm text-slate-400 mt-1">
+            Explore trending series, critically acclaimed seasons, and binge-worthy drama.
+          </p>
+        </div>
+
+        {/* Page counter */}
+        <div className="text-xs text-slate-400 bg-[#111116] px-3.5 py-1.5 rounded-full border border-white/5">
+          Page <strong className="text-white">{currentPage}</strong> of {totalPages}
+        </div>
+      </div>
+
+      {/* Genre Filter Pills */}
+      <div className="mb-8">
+        <div className="flex items-center gap-2 mb-3 text-xs font-bold uppercase tracking-wider text-slate-400">
+          <Filter className="w-3.5 h-3.5 text-[#FF1E56]" />
+          Filter by Genre
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Link
+            href="/tv"
+            className={`text-xs px-3.5 py-1.5 rounded-full transition-all font-medium ${
+              !selectedGenre
+                ? 'bg-[#FF1E56] text-white shadow-[0_0_12px_rgba(255,30,86,0.6)]'
+                : 'bg-[#111116] text-slate-300 hover:text-white hover:bg-[#1a1a24] border border-white/5'
+            }`}
+          >
+            All Genres
+          </Link>
+
+          {genres.map((g) => {
+            const isSelected = selectedGenre === g.id.toString();
+            return (
+              <Link
+                key={g.id}
+                href={`/tv?genre=${g.id}`}
+                className={`text-xs px-3.5 py-1.5 rounded-full transition-all font-medium ${
+                  isSelected
+                    ? 'bg-[#FF1E56] text-white shadow-[0_0_12px_rgba(255,30,86,0.6)]'
+                    : 'bg-[#111116] text-slate-300 hover:text-white hover:bg-[#1a1a24] border border-white/5'
+                }`}
+              >
+                {g.name}
+              </Link>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* TV Shows Grid */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3.5 sm:gap-5">
+        {shows.map((show, idx) => (
+          <MediaCard key={show.id} item={show} priority={idx < 6} />
+        ))}
+      </div>
+
+      {/* Pagination Controls */}
+      <div className="mt-12 flex items-center justify-center gap-4">
+        {currentPage > 1 && (
+          <Link
+            href={`/tv?${selectedGenre ? `genre=${selectedGenre}&` : ''}page=${currentPage - 1}`}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-[#111116] border border-white/10 hover:border-[#FF1E56]/50 text-white transition-colors"
+          >
+            <ChevronLeft className="w-4 h-4" />
+            Previous Page
+          </Link>
+        )}
+
+        <span className="text-xs text-slate-400 px-3 py-2 rounded-xl bg-[#0b0b0e] border border-white/5">
+          {currentPage} / {totalPages}
+        </span>
+
+        {currentPage < totalPages && (
+          <Link
+            href={`/tv?${selectedGenre ? `genre=${selectedGenre}&` : ''}page=${currentPage + 1}`}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-[#111116] border border-white/10 hover:border-[#FF1E56]/50 text-white transition-colors"
+          >
+            Next Page
+            <ChevronRight className="w-4 h-4" />
+          </Link>
+        )}
+      </div>
+    </div>
+  );
+}
