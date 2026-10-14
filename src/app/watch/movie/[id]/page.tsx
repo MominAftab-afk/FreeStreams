@@ -33,10 +33,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     const topCast = movie.credits?.cast.slice(0, 3).map((c) => c.name).join(', ') || '';
     const description = cleanMetaDescription(
       movie.overview ? `${movie.overview} Starring ${topCast}.` : undefined,
-      'Stream full movie in 1080p HD online on RoseFlix.'
+      'Stream full movie in 1080p HD online on MateFlix.'
     );
 
-    const title = `Watch ${movie.title} (${year}) Online Full HD | RoseFlix`;
+    const title = `Watch ${movie.title} (${year}) Online Full HD | MateFlix`;
     const canonicalUrl = `${siteUrl}/watch/movie/${id}`;
     const backdropUrl = movie.backdrop_path
       ? getTMDBImageUrl(movie.backdrop_path, 'original')
@@ -57,13 +57,13 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
         url: canonicalUrl,
         title,
         description,
-        siteName: 'RoseFlix',
+        siteName: 'MateFlix',
         images: [
           {
             url: backdropUrl,
             width: 1280,
             height: 720,
-            alt: `Watch ${movie.title} (${year}) in Full HD on RoseFlix`,
+            alt: `Watch ${movie.title} (${year}) in Full HD on MateFlix`,
           },
         ],
       },
@@ -80,8 +80,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     };
   } catch {
     return {
-      title: 'Watch Movie Online Full HD | RoseFlix',
-      description: 'Stream trending full HD movies online on RoseFlix with fast servers and subtitles.',
+      title: 'Watch Movie Online Full HD | MateFlix',
+      description: 'Stream trending full HD movies online on MateFlix with fast servers and subtitles.',
     };
   }
 }
@@ -116,7 +116,7 @@ export default async function MovieWatchPage({ params }: PageProps) {
   const movieSchema = buildMovieSchema(movie, siteUrl);
   const videoSchema = buildVideoObjectSchema({
     name: `Watch ${movie.title} (${year}) Online Full HD`,
-    description: movie.overview || `Stream ${movie.title} in HD online on RoseFlix.`,
+    description: movie.overview || `Stream ${movie.title} in HD online on MateFlix.`,
     thumbnailUrl: movie.backdrop_path
       ? getTMDBImageUrl(movie.backdrop_path, 'original')
       : movie.poster_path
@@ -240,7 +240,7 @@ export default async function MovieWatchPage({ params }: PageProps) {
                   Storyline & Overview
                 </h2>
                 <p className="text-sm text-slate-300 leading-relaxed">
-                  {movie.overview || `Watch ${movie.title} (${year}) online in full HD with multiple fast streaming servers and English subtitles on RoseFlix.`}
+                  {movie.overview || `Watch ${movie.title} (${year}) online in full HD with multiple fast streaming servers and English subtitles on MateFlix.`}
                 </p>
               </div>
 

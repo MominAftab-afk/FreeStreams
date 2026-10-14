@@ -2,7 +2,7 @@ import { DetailedMovie, DetailedTVShow } from '@/lib/tmdb';
 import { getTMDBImageUrl } from '@/lib/utils';
 
 export function getSiteUrl(): string {
-  const url = process.env.NEXT_PUBLIC_SITE_URL || 'https://roseflix.com';
+  const url = process.env.NEXT_PUBLIC_SITE_URL || 'https://mateflix.com';
   return url.replace(/\/+$/, '');
 }
 
@@ -11,7 +11,7 @@ export function getSiteUrl(): string {
  */
 export function cleanMetaDescription(
   overview: string | undefined | null,
-  fallbackCta: string = 'Stream in full 1080p HD online on RoseFlix.'
+  fallbackCta: string = 'Stream in full 1080p HD online on MateFlix.'
 ): string {
   if (!overview || !overview.trim()) {
     return `Watch full movies and TV series online in crisp 1080p HD with English subtitles. ${fallbackCta}`.slice(0, 160);
@@ -154,8 +154,8 @@ export function buildWebSiteSearchSchema(baseUrl: string) {
   return {
     '@context': 'https://schema.org',
     '@type': 'WebSite',
-    name: 'RoseFlix',
-    alternateName: ['RoseFlix HD', 'RoseFlix Movies'],
+    name: 'MateFlix',
+    alternateName: ['MateFlix HD', 'MateFlix Movies'],
     url: baseUrl,
     potentialAction: {
       '@type': 'SearchAction',

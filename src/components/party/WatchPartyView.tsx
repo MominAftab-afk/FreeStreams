@@ -48,19 +48,19 @@ export default function WatchPartyView({ roomId }: WatchPartyViewProps) {
   const [isLiveConnected, setIsLiveConnected] = useState(false);
   const [hostToken] = useState<string | null>(() => {
     if (typeof window !== 'undefined') {
-      return sessionStorage.getItem(`roseflix_party_host_${roomId}`);
+      return sessionStorage.getItem(`mateflix_party_host_${roomId}`);
     }
     return null;
   });
 
   const [myNickname, setMyNickname] = useState<string>(() => {
     if (typeof window !== 'undefined') {
-      const saved = sessionStorage.getItem('roseflix_party_name');
+      const saved = sessionStorage.getItem('mateflix_party_name');
       if (saved) return saved;
-      const token = sessionStorage.getItem(`roseflix_party_host_${roomId}`);
+      const token = sessionStorage.getItem(`mateflix_party_host_${roomId}`);
       if (token) return 'Host';
       const randomGuest = `Guest_${Math.floor(100 + Math.random() * 900)}`;
-      sessionStorage.setItem('roseflix_party_name', randomGuest);
+      sessionStorage.setItem('mateflix_party_name', randomGuest);
       return randomGuest;
     }
     return 'Guest';
@@ -85,7 +85,7 @@ export default function WatchPartyView({ roomId }: WatchPartyViewProps) {
     const currentToken =
       hostToken ||
       (typeof window !== 'undefined'
-        ? sessionStorage.getItem(`roseflix_party_host_${roomId}`)
+        ? sessionStorage.getItem(`mateflix_party_host_${roomId}`)
         : null);
 
     const streamUrl = `/api/party/${roomId}/stream${
@@ -162,7 +162,7 @@ export default function WatchPartyView({ roomId }: WatchPartyViewProps) {
 
   // Host browser tab close / leave protection
   useEffect(() => {
-    const isHost = Boolean(hostToken || sessionStorage.getItem(`roseflix_party_host_${roomId}`));
+    const isHost = Boolean(hostToken || sessionStorage.getItem(`mateflix_party_host_${roomId}`));
     if (!isHost) return;
 
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
@@ -221,7 +221,7 @@ export default function WatchPartyView({ roomId }: WatchPartyViewProps) {
 
     try {
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      const currentToken = hostToken || sessionStorage.getItem(`roseflix_party_host_${roomId}`);
+      const currentToken = hostToken || sessionStorage.getItem(`mateflix_party_host_${roomId}`);
       if (currentToken) {
         headers['x-host-token'] = currentToken;
       }
@@ -243,7 +243,7 @@ export default function WatchPartyView({ roomId }: WatchPartyViewProps) {
 
   // Playback Control Actions
   const handleTogglePause = async () => {
-    const currentToken = hostToken || sessionStorage.getItem(`roseflix_party_host_${roomId}`);
+    const currentToken = hostToken || sessionStorage.getItem(`mateflix_party_host_${roomId}`);
     if (!currentToken || isSyncingPlayback) return;
 
     setIsSyncingPlayback(true);
@@ -268,7 +268,7 @@ export default function WatchPartyView({ roomId }: WatchPartyViewProps) {
 
   const handleSyncTimestamp = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    const currentToken = hostToken || sessionStorage.getItem(`roseflix_party_host_${roomId}`);
+    const currentToken = hostToken || sessionStorage.getItem(`mateflix_party_host_${roomId}`);
     if (!currentToken || !timestampInput.trim() || isSyncingPlayback) return;
 
     setIsSyncingPlayback(true);
@@ -294,7 +294,7 @@ export default function WatchPartyView({ roomId }: WatchPartyViewProps) {
 
   const handleHostConfirmEnd = async () => {
     try {
-      const currentToken = hostToken || sessionStorage.getItem(`roseflix_party_host_${roomId}`);
+      const currentToken = hostToken || sessionStorage.getItem(`mateflix_party_host_${roomId}`);
       if (currentToken) {
         await fetch(`/api/party/${roomId}`, {
           method: 'DELETE',
@@ -304,13 +304,13 @@ export default function WatchPartyView({ roomId }: WatchPartyViewProps) {
     } catch (err) {
       console.error(err);
     }
-    sessionStorage.removeItem(`roseflix_party_host_${roomId}`);
+    sessionStorage.removeItem(`mateflix_party_host_${roomId}`);
     setShowLeaveModal(false);
     router.push('/');
   };
 
   const handleServerChange = async (newServer: string) => {
-    const currentToken = hostToken || sessionStorage.getItem(`roseflix_party_host_${roomId}`);
+    const currentToken = hostToken || sessionStorage.getItem(`mateflix_party_host_${roomId}`);
     if (!currentToken || !roomData) return;
 
     try {
@@ -728,7 +728,7 @@ export default function WatchPartyView({ roomId }: WatchPartyViewProps) {
                 maxLength={18}
                 onChange={(e) => {
                   setMyNickname(e.target.value);
-                  sessionStorage.setItem('roseflix_party_name', e.target.value);
+                  sessionStorage.setItem('mateflix_party_name', e.target.value);
                 }}
                 className="w-20 px-1.5 py-0.5 rounded bg-[#1a1a26] text-white text-[11px] font-semibold border border-white/10 focus:outline-none focus:border-[#FF1E56]"
                 title="Click to edit nickname"

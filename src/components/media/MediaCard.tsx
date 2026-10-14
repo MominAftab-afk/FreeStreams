@@ -20,7 +20,7 @@ export default function MediaCard({ item, priority = false }: MediaCardProps) {
   const releaseDate = 'release_date' in item ? item.release_date : item.first_air_date;
   const year = formatYear(releaseDate);
   const watchUrl = isMovie ? `/watch/movie/${item.id}` : `/watch/tv/${item.id}`;
-  const accessibleLabel = `Watch ${title} (${year}) Online Full HD on RoseFlix`;
+  const accessibleLabel = `Watch ${title} (${year}) Online Full HD on MateFlix`;
 
   return (
     <Link

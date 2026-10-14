@@ -9,8 +9,8 @@ interface PartyPageProps {
 export async function generateMetadata({ params }: PartyPageProps): Promise<Metadata> {
   const { roomId } = await params;
   return {
-    title: `Watch Together (Room ${roomId}) - RoseFlix`,
-    description: 'Join a temporary synchronized watch party session on RoseFlix. No login required.',
+    title: `Watch Together (Room ${roomId}) - MateFlix`,
+    description: 'Join a temporary synchronized watch party session on MateFlix. No login required.',
     robots: {
       index: false, // Temporary watch parties should not be indexed by Google crawlers
       follow: false,

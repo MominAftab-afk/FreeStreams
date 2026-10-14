@@ -21,7 +21,7 @@ export default function ContinueWatching() {
 
   useEffect(() => {
     try {
-      const stored = localStorage.getItem('roseflix_continue_watching');
+      const stored = localStorage.getItem('mateflix_continue_watching');
       if (stored) {
         setHistory(JSON.parse(stored));
       }
@@ -36,7 +36,7 @@ export default function ContinueWatching() {
     const updated = history.filter((item) => item.id !== id);
     setHistory(updated);
     try {
-      localStorage.setItem('roseflix_continue_watching', JSON.stringify(updated));
+      localStorage.setItem('mateflix_continue_watching', JSON.stringify(updated));
     } catch (err) {
       console.error(err);
     }

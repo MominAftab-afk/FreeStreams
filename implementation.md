@@ -145,7 +145,7 @@ Manage all ad scripts via `.env` variables so you can develop locally with zero 
 ```env
 NEXT_PUBLIC_TMDB_API_KEY=your_key_here
 NEXT_PUBLIC_TMDB_BASE_URL=https://api.themoviedb.org/3
-NEXT_PUBLIC_SITE_NAME=RoseFlix
+NEXT_PUBLIC_SITE_NAME=MateFlix
 NEXT_PUBLIC_SITE_URL=https://yourdomain.com
 
 # Monetization Controls (Set to 'true' when deploying to VPS)

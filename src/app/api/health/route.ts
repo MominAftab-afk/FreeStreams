@@ -5,6 +5,6 @@ export async function GET() {
     status: 'ok',
     uptime: process.uptime(),
     timestamp: new Date().toISOString(),
-    service: 'roseflix-web',
+    service: 'mateflix-web',
   });
 }

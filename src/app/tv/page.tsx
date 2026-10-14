@@ -27,12 +27,12 @@ export async function generateMetadata({ searchParams }: TVPageProps): Promise<M
   }
 
   const title = genreName
-    ? `Watch ${genreName} TV Series Online Free in Full HD${page > 1 ? ` (Page ${page})` : ''} | RoseFlix`
-    : `Watch TV Series Online Free in Full HD${page > 1 ? ` (Page ${page})` : ''} | RoseFlix`;
+    ? `Watch ${genreName} TV Series Online Free in Full HD${page > 1 ? ` (Page ${page})` : ''} | MateFlix`
+    : `Watch TV Series Online Free in Full HD${page > 1 ? ` (Page ${page})` : ''} | MateFlix`;
 
   const description = genreName
-    ? `Binge the best ${genreName} TV series and anime online in 1080p HD. Instant streaming across multiple servers with English subtitles on RoseFlix.`
-    : 'Binge full seasons and episodes of top-rated TV shows, anime, and dramas online in HD. Free streaming across redundant servers with English subtitles on RoseFlix.';
+    ? `Binge the best ${genreName} TV series and anime online in 1080p HD. Instant streaming across multiple servers with English subtitles on MateFlix.`
+    : 'Binge full seasons and episodes of top-rated TV shows, anime, and dramas online in HD. Free streaming across redundant servers with English subtitles on MateFlix.';
 
   const canonicalUrl = `${siteUrl}/tv${selectedGenre ? `?genre=${selectedGenre}` : ''}`;
 
@@ -49,7 +49,7 @@ export async function generateMetadata({ searchParams }: TVPageProps): Promise<M
       url: canonicalUrl,
       title,
       description,
-      siteName: 'RoseFlix',
+      siteName: 'MateFlix',
     },
     twitter: {
       card: 'summary_large_image',

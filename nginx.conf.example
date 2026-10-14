@@ -1,12 +1,12 @@
-# RoseFlix Production Nginx Reverse Proxy Configuration
-# Place this in /etc/nginx/sites-available/roseflix.conf and symlink to /etc/nginx/sites-enabled/
+# MateFlix Production Nginx Reverse Proxy Configuration
+# Place this in /etc/nginx/sites-available/mateflix.conf and symlink to /etc/nginx/sites-enabled/
 
-upstream roseflix_upstream {
+upstream mateflix_upstream {
     # If running Next.js locally on host or in Docker with host networking:
     server 127.0.0.1:3000;
     
     # If running inside a custom Docker network with docker-compose:
-    # server roseflix:3000;
+    # server mateflix:3000;
     
     keepalive 32;
 }
@@ -55,7 +55,7 @@ server {
     # 1. Server-Sent Events (SSE) & Watch Party Streaming Route
     # CRITICAL: Buffering and caching must be disabled for real-time delivery
     location /api/party/ {
-        proxy_pass http://roseflix_upstream;
+        proxy_pass http://mateflix_upstream;
         
         # Disable buffering and caching for real-time SSE chunks
         proxy_buffering off;
@@ -79,7 +79,7 @@ server {
 
     # 2. Next.js Static Assets (Cache Aggressively)
     location /_next/static/ {
-        proxy_pass http://roseflix_upstream;
+        proxy_pass http://mateflix_upstream;
         proxy_http_version 1.1;
         proxy_set_header Connection "";
         expires 365d;
@@ -88,7 +88,7 @@ server {
 
     # 3. Public Static Files (Favicons, Robots, Sitemaps)
     location ~* ^/(favicon\.ico|robots\.txt|sitemap\.xml|.*\.(png|jpg|jpeg|gif|svg|webp|ico))$ {
-        proxy_pass http://roseflix_upstream;
+        proxy_pass http://mateflix_upstream;
         proxy_http_version 1.1;
         proxy_set_header Connection "";
         expires 7d;
@@ -97,7 +97,7 @@ server {
 
     # 4. General Application Routes & Fallback
     location / {
-        proxy_pass http://roseflix_upstream;
+        proxy_pass http://mateflix_upstream;
         
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;

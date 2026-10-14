@@ -42,8 +42,8 @@ export default function CreatePartyModal({ isOpen, onClose, media }: CreateParty
       const data = await res.json();
       if (data.success && data.roomId && data.hostToken) {
         // Store host token in sessionStorage so host identity is recognized
-        sessionStorage.setItem(`roseflix_party_host_${data.roomId}`, data.hostToken);
-        sessionStorage.setItem(`roseflix_party_name`, hostName.trim() || 'Host');
+        sessionStorage.setItem(`mateflix_party_host_${data.roomId}`, data.hostToken);
+        sessionStorage.setItem(`mateflix_party_name`, hostName.trim() || 'Host');
 
         onClose();
         router.push(`/party/${data.roomId}`);
