@@ -16,7 +16,7 @@ export default function Footer() {
                 <PlayCircle className="w-4 h-4 text-white" />
               </div>
               <span className="font-extrabold text-xl tracking-tight text-white">
-                Mate<span className="text-[#FF1E56]">Flix</span>
+                Rose<span className="text-[#FF1E56]">Flix</span>
               </span>
             </Link>
             <p className="text-xs text-slate-400 leading-relaxed max-w-md">
@@ -63,7 +63,7 @@ export default function Footer() {
 
         {/* Bottom Line */}
         <div className="border-t border-white/5 pt-6 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-3">
-          <p>© {currentYear} MateFlix. All rights reserved.</p>
+          <p>© {currentYear} RoseFlix. All rights reserved.</p>
           <div className="flex items-center gap-1 text-slate-400 text-xs">
             <span>Crafted with</span>
             <Heart className="w-3.5 h-3.5 text-[#FF1E56] fill-[#FF1E56]" />

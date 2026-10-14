@@ -22,7 +22,7 @@ export default function PopUnderManager() {
 
   return (
     <Script
-      id="mateflix-popunder"
+      id="roseflix-popunder"
       src={rawUrl}
       strategy="afterInteractive"
     />

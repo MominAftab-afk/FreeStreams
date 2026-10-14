@@ -27,12 +27,12 @@ export async function generateMetadata({ searchParams }: MoviesPageProps): Promi
   }
 
   const title = genreName
-    ? `Watch ${genreName} Movies Online Free in Full HD${page > 1 ? ` (Page ${page})` : ''} | MateFlix`
-    : `Watch Movies Online Free in Full HD${page > 1 ? ` (Page ${page})` : ''} | MateFlix`;
+    ? `Watch ${genreName} Movies Online Free in Full HD${page > 1 ? ` (Page ${page})` : ''} | RoseFlix`
+    : `Watch Movies Online Free in Full HD${page > 1 ? ` (Page ${page})` : ''} | RoseFlix`;
 
   const description = genreName
-    ? `Stream top ${genreName} movies in full 1080p HD online on MateFlix. Fast multi-server streaming with English subtitles and zero buffering.`
-    : 'Browse thousands of high-definition movies across Action, Comedy, Sci-Fi, Drama, Horror, and more. Free instant streaming on MateFlix.';
+    ? `Stream top ${genreName} movies in full 1080p HD online on RoseFlix. Fast multi-server streaming with English subtitles and zero buffering.`
+    : 'Browse thousands of high-definition movies across Action, Comedy, Sci-Fi, Drama, Horror, and more. Free instant streaming on RoseFlix.';
 
   const canonicalUrl = `${siteUrl}/movies${selectedGenre ? `?genre=${selectedGenre}` : ''}`;
 
@@ -49,7 +49,7 @@ export async function generateMetadata({ searchParams }: MoviesPageProps): Promi
       url: canonicalUrl,
       title,
       description,
-      siteName: 'MateFlix',
+      siteName: 'RoseFlix',
     },
     twitter: {
       card: 'summary_large_image',

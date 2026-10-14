@@ -4,5 +4,5 @@
   <circle cx="250" cy="340" r="50" fill="#1a1a24"/>
   <path d="M235 315L275 340L235 365V315Z" fill="#FF1E56"/>
   <text x="250" y="430" fill="#94A3B8" font-family="system-ui, sans-serif" font-size="18" font-weight="600" text-anchor="middle" letter-spacing="1">NO POSTER AVAILABLE</text>
-  <text x="250" y="460" fill="#64748B" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">MateFlix Cinema</text>
+  <text x="250" y="460" fill="#64748B" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">RoseFlix Cinema</text>
 </svg>

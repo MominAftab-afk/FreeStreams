@@ -21,14 +21,14 @@ export const revalidate = 3600; // 1 hour ISR revalidation
 const siteUrl = getSiteUrl();
 
 export const metadata: Metadata = {
-  title: 'MateFlix - Stream Movies & TV Series Online Free in Full HD',
+  title: 'RoseFlix - Stream Movies & TV Series Online Free in Full HD',
   description:
     'Watch trending movies, popular blockbusters, and top-rated TV series online in HD. Free streaming across fast redundant servers with zero buffering.',
   alternates: {
     canonical: siteUrl,
   },
   openGraph: {
-    title: 'MateFlix - Stream Movies & TV Series Online Free in Full HD',
+    title: 'RoseFlix - Stream Movies & TV Series Online Free in Full HD',
     description:
       'Stream thousands of movies and TV shows online in crisp 1080p HD with English subtitles. Fast servers, zero login required.',
     url: siteUrl,

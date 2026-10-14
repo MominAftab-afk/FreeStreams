@@ -1,4 +1,4 @@
-# MateFlix
+# FreeStreams
 
 A high-performance, cinematic media streaming and watch party aggregation platform built with **Next.js 16 (App Router)**, **TypeScript**, and **Tailwind CSS**.
 
@@ -83,4 +83,4 @@ The service will start on port `3000` with automated container restart policies.
 ---
 
 ## Legal & DMCA Disclaimer
-MateFlix is an indexing media search tool. It does not host, upload, or store any media files on its servers. All contents are provided by third-party, non-affiliated services.
+FreeStreams is an indexing media search tool. It does not host, upload, or store any media files on its servers. All contents are provided by third-party, non-affiliated services.

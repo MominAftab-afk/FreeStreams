@@ -18,12 +18,12 @@ export async function generateMetadata({ searchParams }: SearchPageProps): Promi
   const query = sParams.q?.trim() || '';
 
   const title = query
-    ? `Search Results for "${query}" | MateFlix`
-    : 'Search Movies & TV Shows in 1080p HD | MateFlix';
+    ? `Search Results for "${query}" | RoseFlix`
+    : 'Search Movies & TV Shows in 1080p HD | RoseFlix';
 
   const description = query
-    ? `Stream movies and television series matching "${query}" in full 1080p HD online on MateFlix.`
-    : 'Search our expansive catalog of movies and television series to stream in full 1080p HD on MateFlix.';
+    ? `Stream movies and television series matching "${query}" in full 1080p HD online on RoseFlix.`
+    : 'Search our expansive catalog of movies and television series to stream in full 1080p HD on RoseFlix.';
 
   const canonicalUrl = `${siteUrl}/search${query ? `?q=${encodeURIComponent(query)}` : ''}`;
 

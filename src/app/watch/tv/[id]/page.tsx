@@ -39,10 +39,10 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
       show.overview
         ? `${show.overview} Season ${s} Episode ${e}. Starring ${topCast}.`
         : undefined,
-      `Stream ${show.name} in full 1080p HD online on MateFlix.`
+      `Stream ${show.name} in full 1080p HD online on RoseFlix.`
     );
 
-    const title = `Watch ${show.name} Season ${s} Episode ${e} (${year}) Online | MateFlix`;
+    const title = `Watch ${show.name} Season ${s} Episode ${e} (${year}) Online | RoseFlix`;
     const canonicalUrl = `${siteUrl}/watch/tv/${id}`;
     const backdropUrl = show.backdrop_path
       ? getTMDBImageUrl(show.backdrop_path, 'original')
@@ -63,13 +63,13 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
         url: canonicalUrl,
         title,
         description,
-        siteName: 'MateFlix',
+        siteName: 'RoseFlix',
         images: [
           {
             url: backdropUrl,
             width: 1280,
             height: 720,
-            alt: `Watch ${show.name} Season ${s} Episode ${e} on MateFlix`,
+            alt: `Watch ${show.name} Season ${s} Episode ${e} on RoseFlix`,
           },
         ],
       },
@@ -86,8 +86,8 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
     };
   } catch {
     return {
-      title: 'Watch TV Series Online Full HD | MateFlix',
-      description: 'Stream trending full HD TV shows online on MateFlix with fast servers and subtitles.',
+      title: 'Watch TV Series Online Full HD | RoseFlix',
+      description: 'Stream trending full HD TV shows online on RoseFlix with fast servers and subtitles.',
     };
   }
 }
@@ -125,7 +125,7 @@ export default async function TVWatchPage({ params, searchParams }: PageProps) {
   const tvSchema = buildTVSeriesSchema(show, siteUrl);
   const videoSchema = buildVideoObjectSchema({
     name: `Watch ${show.name} Season ${currentSeason} Episode ${currentEpisode} (${year}) Online`,
-    description: show.overview || `Stream ${show.name} in HD online on MateFlix.`,
+    description: show.overview || `Stream ${show.name} in HD online on RoseFlix.`,
     thumbnailUrl: show.backdrop_path
       ? getTMDBImageUrl(show.backdrop_path, 'original')
       : show.poster_path
@@ -250,7 +250,7 @@ export default async function TVWatchPage({ params, searchParams }: PageProps) {
                   Series Overview & Synopsis
                 </h2>
                 <p className="text-sm text-slate-300 leading-relaxed">
-                  {show.overview || `Watch ${show.name} (${year}) online in full HD with multiple fast streaming servers, episode selector, and English subtitles on MateFlix.`}
+                  {show.overview || `Watch ${show.name} (${year}) online in full HD with multiple fast streaming servers, episode selector, and English subtitles on RoseFlix.`}
                 </p>
               </div>
 

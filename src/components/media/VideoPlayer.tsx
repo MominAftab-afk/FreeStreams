@@ -36,7 +36,7 @@ export default function VideoPlayer({
   useEffect(() => {
     if (isPlaying) {
       try {
-        const stored = localStorage.getItem('mateflix_continue_watching');
+        const stored = localStorage.getItem('roseflix_continue_watching');
         let list: WatchHistoryItem[] = stored ? JSON.parse(stored) : [];
         list = list.filter((i) => i.id !== tmdbId);
         list.unshift({
@@ -48,7 +48,7 @@ export default function VideoPlayer({
           episode: type === 'tv' ? episode : undefined,
           timestamp: Date.now(),
         });
-        localStorage.setItem('mateflix_continue_watching', JSON.stringify(list.slice(0, 12)));
+        localStorage.setItem('roseflix_continue_watching', JSON.stringify(list.slice(0, 12)));
       } catch (err) {
         console.error('Failed to update continue watching:', err);
       }
@@ -67,7 +67,7 @@ export default function VideoPlayer({
       directLink &&
       (directLink.startsWith('http://') || directLink.startsWith('https://') || directLink.startsWith('//'))
     ) {
-      const sessionKey = `mateflix_smartlink_${tmdbId}`;
+      const sessionKey = `roseflix_smartlink_${tmdbId}`;
       const alreadyTriggered = sessionStorage.getItem(sessionKey);
 
       if (!alreadyTriggered) {

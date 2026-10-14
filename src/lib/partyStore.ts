@@ -54,20 +54,20 @@ export interface FormattedPartyState {
 
 // In-memory global store & event bus across hot-reloads and requests
 declare global {
-  var __MATEFLIX_PARTY_STORE__: Map<string, PartyRoom> | undefined;
-  var __MATEFLIX_PARTY_BUS__: EventEmitter | undefined;
+  var __ROSEFLIX_PARTY_STORE__: Map<string, PartyRoom> | undefined;
+  var __ROSEFLIX_PARTY_BUS__: EventEmitter | undefined;
 }
 
 const partyStore: Map<string, PartyRoom> =
-  global.__MATEFLIX_PARTY_STORE__ || new Map<string, PartyRoom>();
+  global.__ROSEFLIX_PARTY_STORE__ || new Map<string, PartyRoom>();
 
 const partyBus: EventEmitter =
-  global.__MATEFLIX_PARTY_BUS__ || new EventEmitter();
+  global.__ROSEFLIX_PARTY_BUS__ || new EventEmitter();
 partyBus.setMaxListeners(0);
 
 if (process.env.NODE_ENV !== 'production') {
-  global.__MATEFLIX_PARTY_STORE__ = partyStore;
-  global.__MATEFLIX_PARTY_BUS__ = partyBus;
+  global.__ROSEFLIX_PARTY_STORE__ = partyStore;
+  global.__ROSEFLIX_PARTY_BUS__ = partyBus;
 }
 
 // Generate human-friendly 8-char room code
@@ -127,7 +127,7 @@ export function createPartyRoom(media: PartyMedia, hostName: string = 'Host'): P
     messages: [
       {
         id: `sys_${Date.now()}`,
-        sender: 'MateFlix Bot',
+        sender: 'RoseFlix Bot',
         text: `Watch party created! Share the link with friends to watch together in real-time.`,
         timestamp: Date.now(),
         isHost: false,
@@ -213,7 +213,7 @@ export function endPartyRoom(roomId: string, hostToken: string): boolean {
   room.status = 'ended';
   room.messages.push({
     id: `sys_end_${Date.now()}`,
-    sender: 'MateFlix Bot',
+    sender: 'RoseFlix Bot',
     text: `The host has ended this watch party session.`,
     timestamp: Date.now(),
     isHost: false,
@@ -279,7 +279,7 @@ export function updatePartyPlayback(
   if (data.timestampFormatted) {
     room.messages.push({
       id: `sys_time_${Date.now()}`,
-      sender: 'MateFlix Bot',
+      sender: 'RoseFlix Bot',
       text: `Host synchronized playback to timestamp ${data.timestampFormatted}.`,
       timestamp: Date.now(),
       isHost: false,
@@ -287,7 +287,7 @@ export function updatePartyPlayback(
   } else if (data.isPaused === true) {
     room.messages.push({
       id: `sys_pause_${Date.now()}`,
-      sender: 'MateFlix Bot',
+      sender: 'RoseFlix Bot',
       text: `Host paused the session for all participants.`,
       timestamp: Date.now(),
       isHost: false,
@@ -295,7 +295,7 @@ export function updatePartyPlayback(
   } else if (data.countdownEnd) {
     room.messages.push({
       id: `sys_resume_${Date.now()}`,
-      sender: 'MateFlix Bot',
+      sender: 'RoseFlix Bot',
       text: `Host resumed streaming. 3-second synchronized countdown started!`,
       timestamp: Date.now(),
       isHost: false,

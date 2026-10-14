@@ -54,7 +54,7 @@ export default function Navbar() {
               <PlayCircle className="w-5 h-5 text-white fill-white/20" />
             </div>
             <span className="font-extrabold text-xl sm:text-2xl tracking-tight text-white">
-              Mate<span className="text-[#FF1E56] drop-shadow-[0_0_12px_rgba(255,30,86,0.8)]">Flix</span>
+              Rose<span className="text-[#FF1E56] drop-shadow-[0_0_12px_rgba(255,30,86,0.8)]">Flix</span>
             </span>
           </Link>
 

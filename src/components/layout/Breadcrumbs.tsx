@@ -19,7 +19,7 @@ export default function Breadcrumbs({ items }: BreadcrumbsProps) {
           <Link
             href="/"
             className="flex items-center gap-1 hover:text-white transition-colors"
-            title="Return to MateFlix Home"
+            title="Return to RoseFlix Home"
           >
             <Home className="w-3.5 h-3.5 text-[#FF1E56]" />
             <span>Home</span>
