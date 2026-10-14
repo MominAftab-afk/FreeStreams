@@ -3,16 +3,60 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Tv, Filter, ChevronLeft, ChevronRight } from 'lucide-react';
 import MediaCard from '@/components/media/MediaCard';
+import Breadcrumbs from '@/components/layout/Breadcrumbs';
+import JsonLd from '@/components/seo/JsonLd';
 import { discoverTV, getTVGenres } from '@/lib/tmdb';
-
-export const metadata: Metadata = {
-  title: 'Watch TV Series Online Free in HD - RoseFlix',
-  description:
-    'Binge full seasons and episodes of top-rated TV shows, anime, and dramas online in HD. Free streaming across redundant servers with English subtitles.',
-};
+import { getSiteUrl, buildBreadcrumbSchema } from '@/lib/seo';
 
 interface TVPageProps {
   searchParams: Promise<{ genre?: string; page?: string; sort?: string }>;
+}
+
+export async function generateMetadata({ searchParams }: TVPageProps): Promise<Metadata> {
+  const sParams = await searchParams;
+  const siteUrl = getSiteUrl();
+  const selectedGenre = sParams.genre;
+  const page = sParams.page ? parseInt(sParams.page, 10) : 1;
+
+  let genreName = '';
+  if (selectedGenre) {
+    try {
+      const genres = await getTVGenres();
+      genreName = genres.find((g) => g.id.toString() === selectedGenre)?.name || '';
+    } catch {}
+  }
+
+  const title = genreName
+    ? `Watch ${genreName} TV Series Online Free in Full HD${page > 1 ? ` (Page ${page})` : ''} | RoseFlix`
+    : `Watch TV Series Online Free in Full HD${page > 1 ? ` (Page ${page})` : ''} | RoseFlix`;
+
+  const description = genreName
+    ? `Binge the best ${genreName} TV series and anime online in 1080p HD. Instant streaming across multiple servers with English subtitles on RoseFlix.`
+    : 'Binge full seasons and episodes of top-rated TV shows, anime, and dramas online in HD. Free streaming across redundant servers with English subtitles on RoseFlix.';
+
+  const canonicalUrl = `${siteUrl}/tv${selectedGenre ? `?genre=${selectedGenre}` : ''}`;
+
+  return {
+    title: {
+      absolute: title,
+    },
+    description,
+    alternates: {
+      canonical: canonicalUrl,
+    },
+    openGraph: {
+      type: 'website',
+      url: canonicalUrl,
+      title,
+      description,
+      siteName: 'RoseFlix',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+    },
+  };
 }
 
 export default async function TVCatalogPage({ searchParams }: TVPageProps) {
@@ -20,6 +64,7 @@ export default async function TVCatalogPage({ searchParams }: TVPageProps) {
   const selectedGenre = sParams.genre;
   const currentPage = parseInt(sParams.page || '1', 10);
   const sortBy = sParams.sort || 'popularity.desc';
+  const siteUrl = getSiteUrl();
 
   const [genres, tvData] = await Promise.all([
     getTVGenres(),
@@ -35,8 +80,23 @@ export default async function TVCatalogPage({ searchParams }: TVPageProps) {
 
   const activeGenreName = genres.find((g) => g.id.toString() === selectedGenre)?.name;
 
+  // Breadcrumbs items
+  const breadcrumbItems = [
+    { name: 'TV Series', url: `${siteUrl}/tv` },
+    ...(activeGenreName
+      ? [{ name: `${activeGenreName} Series`, url: `${siteUrl}/tv?genre=${selectedGenre}` }]
+      : []),
+  ];
+  const breadcrumbSchema = buildBreadcrumbSchema(breadcrumbItems);
+
   return (
     <div className="min-h-screen pt-24 pb-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      {/* Schema.org Breadcrumb */}
+      <JsonLd data={breadcrumbSchema} />
+
+      {/* Semantic Visible Breadcrumbs */}
+      <Breadcrumbs items={breadcrumbItems} />
+
       {/* Page Title & Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
         <div>
@@ -45,7 +105,7 @@ export default async function TVCatalogPage({ searchParams }: TVPageProps) {
             Series Catalog
           </div>
           <h1 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
-            {activeGenreName ? `${activeGenreName} TV Series` : 'All TV Shows'}
+            {activeGenreName ? `${activeGenreName} TV Series` : 'All TV Shows in Full HD'}
           </h1>
           <p className="text-sm text-slate-400 mt-1">
             Explore trending series, critically acclaimed seasons, and binge-worthy drama.
@@ -95,7 +155,7 @@ export default async function TVCatalogPage({ searchParams }: TVPageProps) {
         </div>
       </div>
 
-      {/* TV Shows Grid */}
+      {/* Shows Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3.5 sm:gap-5">
         {shows.map((show, idx) => (
           <MediaCard key={show.id} item={show} priority={idx < 6} />

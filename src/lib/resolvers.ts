@@ -49,8 +49,14 @@ export function getEmbedUrl(
   type: 'movie' | 'tv',
   tmdbId: number | string,
   season: number = 1,
-  episode: number = 1
+  episode: number = 1,
+  timeSeconds?: number
 ): string {
   const server = VIDEO_SERVERS.find((s) => s.id === serverId) || VIDEO_SERVERS[0];
-  return type === 'movie' ? server.getMovieUrl(tmdbId) : server.getTVUrl(tmdbId, season, episode);
+  const baseUrl = type === 'movie' ? server.getMovieUrl(tmdbId) : server.getTVUrl(tmdbId, season, episode);
+  if (timeSeconds && timeSeconds > 0) {
+    const separator = baseUrl.includes('?') ? '&' : '?';
+    return `${baseUrl}${separator}t=${Math.floor(timeSeconds)}`;
+  }
+  return baseUrl;
 }

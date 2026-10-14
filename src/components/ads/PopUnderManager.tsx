@@ -1,32 +1,30 @@
 'use client';
 
-import { useEffect } from 'react';
+import { usePathname } from 'next/navigation';
+import Script from 'next/script';
 
 export default function PopUnderManager() {
-  useEffect(() => {
-    const adsEnabled = process.env.NEXT_PUBLIC_ENABLE_ADS === 'true';
-    const scriptUrl = process.env.NEXT_PUBLIC_POPUNDER_SCRIPT_URL;
+  const pathname = usePathname();
+  const adsEnabled = process.env.NEXT_PUBLIC_ENABLE_ADS === 'true';
+  const rawUrl = process.env.NEXT_PUBLIC_POPUNDER_SCRIPT_URL?.trim();
 
-    if (!adsEnabled || !scriptUrl) return;
+  // Guard 1: Must be explicitly enabled
+  // Guard 2: Must be non-empty and start with http://, https://, or //
+  // Guard 3: Never inject or trigger on Watch Party rooms (/party/*)
+  if (
+    !adsEnabled ||
+    !rawUrl ||
+    (!rawUrl.startsWith('http://') && !rawUrl.startsWith('https://') && !rawUrl.startsWith('//')) ||
+    pathname?.startsWith('/party')
+  ) {
+    return null;
+  }
 
-    // Check frequency cap (e.g. 45 mins)
-    const lastPop = localStorage.getItem('roseflix_last_pop');
-    const now = Date.now();
-    const capDuration = 45 * 60 * 1000;
-
-    if (!lastPop || now - parseInt(lastPop, 10) > capDuration) {
-      const script = document.createElement('script');
-      script.src = scriptUrl;
-      script.async = true;
-      document.body.appendChild(script);
-
-      return () => {
-        if (document.body.contains(script)) {
-          document.body.removeChild(script);
-        }
-      };
-    }
-  }, []);
-
-  return null;
+  return (
+    <Script
+      id="roseflix-popunder"
+      src={rawUrl}
+      strategy="afterInteractive"
+    />
+  );
 }

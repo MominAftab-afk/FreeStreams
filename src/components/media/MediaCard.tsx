@@ -18,11 +18,15 @@ export default function MediaCard({ item, priority = false }: MediaCardProps) {
   const isMovie = item.media_type === 'movie' || 'title' in item;
   const title = ('title' in item ? item.title : item.name) || 'Untitled';
   const releaseDate = 'release_date' in item ? item.release_date : item.first_air_date;
+  const year = formatYear(releaseDate);
   const watchUrl = isMovie ? `/watch/movie/${item.id}` : `/watch/tv/${item.id}`;
+  const accessibleLabel = `Watch ${title} (${year}) Online Full HD on RoseFlix`;
 
   return (
     <Link
       href={watchUrl}
+      title={accessibleLabel}
+      aria-label={accessibleLabel}
       className="group/card relative flex flex-col rounded-xl overflow-hidden bg-[#111116] border border-white/5 transition-all duration-300 hover:border-[#FF1E56]/40 hover:shadow-[0_8px_25px_-5px_rgba(255,30,86,0.3)] hover:-translate-y-1 focus:outline-none"
     >
       {/* Poster Image Container (Strict aspect-[2/3] for 0 CLS) */}
@@ -32,7 +36,7 @@ export default function MediaCard({ item, priority = false }: MediaCardProps) {
 
         <Image
           src={getTMDBImageUrl(item.poster_path, 'w500')}
-          alt={title}
+          alt={`${title} (${year}) official poster`}
           fill
           priority={priority}
           sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
@@ -53,7 +57,7 @@ export default function MediaCard({ item, priority = false }: MediaCardProps) {
           </span>
         </div>
 
-        {/* Hover Vignette & Quick Play Button - scoped strictly to this card */}
+        {/* Hover Vignette & Quick Play Button */}
         <div className="absolute inset-0 bg-gradient-to-t from-[#070709] via-black/30 to-transparent opacity-0 group-hover/card:opacity-100 transition-opacity duration-300 flex items-center justify-center">
           <div className="w-11 h-11 rounded-full bg-[#FF1E56] text-white flex items-center justify-center shadow-[0_0_20px_rgba(255,30,86,0.8)] transform scale-90 group-hover/card:scale-100 transition-all duration-300">
             <Play className="w-4 h-4 fill-white ml-0.5" />
@@ -68,7 +72,7 @@ export default function MediaCard({ item, priority = false }: MediaCardProps) {
         </h3>
 
         <div className="flex items-center justify-between mt-1.5 text-xs text-slate-400">
-          <span>{formatYear(releaseDate)}</span>
+          <span>{year}</span>
           <div className="flex items-center gap-1 text-amber-400 font-medium">
             <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
             <span>{formatRating(item.vote_average)}</span>

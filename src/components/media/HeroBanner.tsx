@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Play, Info, Star, Calendar, Flame, ChevronRight, ChevronLeft } from 'lucide-react';
+import { Play, Info, Star, Calendar, Flame } from 'lucide-react';
 import { MediaItem } from '@/types/tmdb';
 import { getTMDBImageUrl, formatYear, formatRating } from '@/lib/utils';
 
@@ -34,33 +34,38 @@ export default function HeroBanner({ items }: HeroBannerProps) {
   return (
     <div className="relative w-full h-[70vh] sm:h-[80vh] min-h-[500px] max-h-[820px] overflow-hidden bg-[#070709]">
       {/* Background Backdrops */}
-      {featuredItems.map((item, idx) => (
-        <div
-          key={item.id}
-          className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
-            idx === currentIndex ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'
-          }`}
-        >
-          {item.backdrop_path && (
-            <Image
-              src={getTMDBImageUrl(item.backdrop_path, 'original')}
-              alt={title}
-              fill
-              priority={idx === 0}
-              className="object-cover object-top filter brightness-[0.85]"
-              sizes="100vw"
-            />
-          )}
+      {featuredItems.map((item, idx) => {
+        const itemTitle = ('title' in item ? item.title : item.name) || 'Featured Title';
+        const itemYear = formatYear('release_date' in item ? item.release_date : item.first_air_date);
 
-          {/* Vignette Gradients */}
-          {/* Bottom Gradient into Obsidian background */}
-          <div className="absolute inset-0 bg-gradient-to-t from-[#070709] via-[#070709]/60 to-transparent" />
-          {/* Left Gradient for desktop readability */}
-          <div className="absolute inset-0 bg-gradient-to-r from-[#070709] via-[#070709]/80 to-transparent w-full lg:w-3/4" />
-          {/* Top subtle fade for navbar */}
-          <div className="absolute inset-0 bg-gradient-to-b from-[#070709]/70 via-transparent to-transparent h-32" />
-        </div>
-      ))}
+        return (
+          <div
+            key={item.id}
+            className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
+              idx === currentIndex ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'
+            }`}
+          >
+            {item.backdrop_path && (
+              <Image
+                src={getTMDBImageUrl(item.backdrop_path, 'original')}
+                alt={`${itemTitle} (${itemYear}) official backdrop`}
+                fill
+                priority={idx === 0}
+                className="object-cover object-top filter brightness-[0.85]"
+                sizes="100vw"
+              />
+            )}
+
+            {/* Vignette Gradients */}
+            {/* Bottom Gradient into Obsidian background */}
+            <div className="absolute inset-0 bg-gradient-to-t from-[#070709] via-[#070709]/60 to-transparent" />
+            {/* Left Gradient for desktop readability */}
+            <div className="absolute inset-0 bg-gradient-to-r from-[#070709] via-[#070709]/80 to-transparent w-full lg:w-3/4" />
+            {/* Top subtle fade for navbar */}
+            <div className="absolute inset-0 bg-gradient-to-b from-[#070709]/70 via-transparent to-transparent h-32" />
+          </div>
+        );
+      })}
 
       {/* Hero Content Overlay */}
       <div className="relative z-20 h-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col justify-end pb-16 sm:pb-20">

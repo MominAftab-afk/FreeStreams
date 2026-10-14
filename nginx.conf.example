@@ -1,0 +1,114 @@
+# RoseFlix Production Nginx Reverse Proxy Configuration
+# Place this in /etc/nginx/sites-available/roseflix.conf and symlink to /etc/nginx/sites-enabled/
+
+upstream roseflix_upstream {
+    # If running Next.js locally on host or in Docker with host networking:
+    server 127.0.0.1:3000;
+    
+    # If running inside a custom Docker network with docker-compose:
+    # server roseflix:3000;
+    
+    keepalive 32;
+}
+
+# Optional: HTTP to HTTPS Redirect
+server {
+    listen 80;
+    listen [::]:80;
+    server_name your-domain.com www.your-domain.com;
+
+    # Certbot challenge path
+    location /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
+
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+# Production SSL Server
+server {
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
+    server_name your-domain.com www.your-domain.com;
+
+    # SSL Certificates (managed via Let's Encrypt / Certbot)
+    # ssl_certificate /etc/letsencrypt/live/your-domain.com/fullchain.pem;
+    # ssl_certificate_key /etc/letsencrypt/live/your-domain.com/privkey.pem;
+
+    # SSL Optimization
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers HIGH:!aNULL:!MD5;
+    ssl_prefer_server_ciphers on;
+    ssl_session_cache shared:SSL:10m;
+    ssl_session_timeout 1d;
+
+    # Security Headers
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+
+    # Max body upload size
+    client_max_body_size 20M;
+
+    # 1. Server-Sent Events (SSE) & Watch Party Streaming Route
+    # CRITICAL: Buffering and caching must be disabled for real-time delivery
+    location /api/party/ {
+        proxy_pass http://roseflix_upstream;
+        
+        # Disable buffering and caching for real-time SSE chunks
+        proxy_buffering off;
+        proxy_cache off;
+        
+        # HTTP/1.1 with empty Connection header for persistent keep-alive stream
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+        
+        # Standard proxy headers
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        # Keep streaming connection alive without dropping after default 60s
+        proxy_read_timeout 86400s;
+        proxy_send_timeout 86400s;
+        chunked_transfer_encoding off;
+    }
+
+    # 2. Next.js Static Assets (Cache Aggressively)
+    location /_next/static/ {
+        proxy_pass http://roseflix_upstream;
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+        expires 365d;
+        add_header Cache-Control "public, max-age=31536000, immutable";
+    }
+
+    # 3. Public Static Files (Favicons, Robots, Sitemaps)
+    location ~* ^/(favicon\.ico|robots\.txt|sitemap\.xml|.*\.(png|jpg|jpeg|gif|svg|webp|ico))$ {
+        proxy_pass http://roseflix_upstream;
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+        expires 7d;
+        add_header Cache-Control "public, max-age=604800";
+    }
+
+    # 4. General Application Routes & Fallback
+    location / {
+        proxy_pass http://roseflix_upstream;
+        
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        proxy_read_timeout 120s;
+        proxy_send_timeout 120s;
+    }
+}

@@ -11,101 +11,154 @@ import {
   Crown,
   AlertTriangle,
   LogOut,
-  RefreshCw,
-  Film,
-  Tv,
   MessageSquare,
   ShieldAlert,
+  Zap,
+  Pause,
+  Play,
+  Clock,
+  RotateCcw,
+  Sliders,
 } from 'lucide-react';
 import { VIDEO_SERVERS, getEmbedUrl } from '@/lib/resolvers';
-import { PartyMedia, ChatMessage } from '@/lib/partyStore';
+import { PartyMedia, ChatMessage, PartyPlaybackState } from '@/lib/partyStore';
 
 interface WatchPartyViewProps {
   roomId: string;
 }
 
+interface RoomState {
+  roomId: string;
+  hostName: string;
+  media: PartyMedia;
+  server: string;
+  status: 'active' | 'ended';
+  participantCount: number;
+  messages: ChatMessage[];
+  playback?: PartyPlaybackState;
+  isHost?: boolean;
+}
+
 export default function WatchPartyView({ roomId }: WatchPartyViewProps) {
   const router = useRouter();
 
-  const [roomData, setRoomData] = useState<{
-    hostName: string;
-    media: PartyMedia;
-    server: string;
-    status: 'active' | 'ended';
-    participantCount: number;
-    messages: ChatMessage[];
-    isHost: boolean;
-  } | null>(null);
-
+  const [roomData, setRoomData] = useState<RoomState | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [hostToken, setHostToken] = useState<string | null>(null);
-  const [myNickname, setMyNickname] = useState<string>('Guest');
+  const [isLiveConnected, setIsLiveConnected] = useState(false);
+  const [hostToken] = useState<string | null>(() => {
+    if (typeof window !== 'undefined') {
+      return sessionStorage.getItem(`roseflix_party_host_${roomId}`);
+    }
+    return null;
+  });
+
+  const [myNickname, setMyNickname] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = sessionStorage.getItem('roseflix_party_name');
+      if (saved) return saved;
+      const token = sessionStorage.getItem(`roseflix_party_host_${roomId}`);
+      if (token) return 'Host';
+      const randomGuest = `Guest_${Math.floor(100 + Math.random() * 900)}`;
+      sessionStorage.setItem('roseflix_party_name', randomGuest);
+      return randomGuest;
+    }
+    return 'Guest';
+  });
+
   const [inputMessage, setInputMessage] = useState('');
   const [copied, setCopied] = useState(false);
   const [showLeaveModal, setShowLeaveModal] = useState(false);
   const [isSendingMessage, setIsSendingMessage] = useState(false);
 
+  // Playback sync controls
+  const [timestampInput, setTimestampInput] = useState('');
+  const [isSyncingPlayback, setIsSyncingPlayback] = useState(false);
+  const [iframeKey, setIframeKey] = useState(0);
+  const lastSyncedTimeRef = useRef<number | undefined>(undefined);
+
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
-  // Initialize identity from sessionStorage
-  useEffect(() => {
-    const savedToken = sessionStorage.getItem(`roseflix_party_host_${roomId}`);
-    if (savedToken) {
-      setHostToken(savedToken);
-    }
-    const savedName = sessionStorage.getItem('roseflix_party_name');
-    if (savedName) {
-      setMyNickname(savedName);
-    } else if (savedToken) {
-      setMyNickname('Host');
-    } else {
-      const randomGuest = `Guest_${Math.floor(100 + Math.random() * 900)}`;
-      setMyNickname(randomGuest);
-      sessionStorage.setItem('roseflix_party_name', randomGuest);
-    }
-  }, [roomId]);
-
-  // Polling & Heartbeat loop
+  // Real-Time Server-Sent Events (SSE) Stream Subscription
   useEffect(() => {
     let isMounted = true;
+    const currentToken =
+      hostToken ||
+      (typeof window !== 'undefined'
+        ? sessionStorage.getItem(`roseflix_party_host_${roomId}`)
+        : null);
 
-    async function fetchStatus() {
+    const streamUrl = `/api/party/${roomId}/stream${
+      currentToken ? `?token=${encodeURIComponent(currentToken)}` : ''
+    }`;
+
+    const eventSource = new EventSource(streamUrl);
+
+    eventSource.onopen = () => {
+      if (isMounted) {
+        setIsLiveConnected(true);
+      }
+    };
+
+    eventSource.onmessage = (event) => {
+      if (!isMounted) return;
       try {
-        const headers: Record<string, string> = {};
-        const currentToken = hostToken || sessionStorage.getItem(`roseflix_party_host_${roomId}`);
-        if (currentToken) {
-          headers['x-host-token'] = currentToken;
+        const data = JSON.parse(event.data);
+        setRoomData(data);
+        setLoading(false);
+
+        if (data.status === 'ended') {
+          setError('This temporary watch party has ended.');
         }
 
-        const res = await fetch(`/api/party/${roomId}`, { headers });
-        if (!res.ok) {
-          if (res.status === 404) {
-            setError('This temporary watch party has expired or does not exist.');
-            setLoading(false);
-            return;
-          }
-          throw new Error('Failed to fetch room status');
+        // Detect if timestamp was synced to reload the iframe at the new timestamp
+        if (
+          data.playback?.timestampSeconds !== undefined &&
+          data.playback.timestampSeconds > 0 &&
+          data.playback.timestampSeconds !== lastSyncedTimeRef.current
+        ) {
+          lastSyncedTimeRef.current = data.playback.timestampSeconds;
+          setIframeKey((k) => k + 1);
         }
+      } catch (err) {
+        console.error('Error parsing SSE room update:', err);
+      }
+    };
 
-        const data = await res.json();
+    eventSource.onerror = (err) => {
+      console.warn('Watch party SSE connection status:', err);
+      if (eventSource.readyState === EventSource.CLOSED) {
         if (isMounted) {
-          setRoomData(data);
+          setError((prev) => prev || 'This temporary watch party has expired or does not exist.');
           setLoading(false);
         }
-      } catch (err: any) {
-        console.error('Watch party sync error:', err);
+        setIsLiveConnected(false);
       }
-    }
-
-    fetchStatus();
-    const interval = setInterval(fetchStatus, 3000);
+    };
 
     return () => {
       isMounted = false;
-      clearInterval(interval);
+      eventSource.close();
     };
   }, [roomId, hostToken]);
+
+  // Synchronized Countdown Timer (e.g. 3.. 2.. 1.. Play)
+  const [now, setNow] = useState<number>(() => Date.now());
+  const countdownEnd = roomData?.playback?.countdownEnd;
+  const countdownSeconds =
+    countdownEnd && countdownEnd > now
+      ? Math.ceil((countdownEnd - now) / 1000)
+      : null;
+
+  useEffect(() => {
+    if (!countdownEnd || countdownEnd <= Date.now()) return;
+
+    const timer = setInterval(() => {
+      setNow(Date.now());
+    }, 100);
+
+    return () => clearInterval(timer);
+  }, [countdownEnd]);
 
   // Host browser tab close / leave protection
   useEffect(() => {
@@ -113,7 +166,6 @@ export default function WatchPartyView({ roomId }: WatchPartyViewProps) {
     if (!isHost) return;
 
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      // Modern browser prompt for page unload
       e.preventDefault();
       e.returnValue = 'If you leave, this Watch Party session will end for everyone.';
       return 'If you leave, this Watch Party session will end for everyone.';
@@ -126,18 +178,36 @@ export default function WatchPartyView({ roomId }: WatchPartyViewProps) {
     };
   }, [hostToken, roomId]);
 
-  // Auto-scroll chat
+  // Auto-scroll chat when new messages arrive
   useEffect(() => {
     if (chatContainerRef.current) {
       chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
     }
   }, [roomData?.messages]);
 
-  const copyInviteLink = () => {
-    if (typeof window !== 'undefined') {
-      navigator.clipboard.writeText(window.location.href);
+  // Copy invite link with fallback for insecure origins (HTTP LAN IPs)
+  const copyInviteLink = async () => {
+    if (typeof window === 'undefined') return;
+
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(window.location.href);
+      } else {
+        const textArea = document.createElement('textarea');
+        textArea.value = window.location.href;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-999999px';
+        textArea.style.top = '-999999px';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        document.execCommand('copy');
+        textArea.remove();
+      }
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy invite link:', err);
     }
   };
 
@@ -151,8 +221,9 @@ export default function WatchPartyView({ roomId }: WatchPartyViewProps) {
 
     try {
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      if (hostToken) {
-        headers['x-host-token'] = hostToken;
+      const currentToken = hostToken || sessionStorage.getItem(`roseflix_party_host_${roomId}`);
+      if (currentToken) {
+        headers['x-host-token'] = currentToken;
       }
 
       await fetch(`/api/party/${roomId}/chat`, {
@@ -170,12 +241,64 @@ export default function WatchPartyView({ roomId }: WatchPartyViewProps) {
     }
   };
 
+  // Playback Control Actions
+  const handleTogglePause = async () => {
+    const currentToken = hostToken || sessionStorage.getItem(`roseflix_party_host_${roomId}`);
+    if (!currentToken || isSyncingPlayback) return;
+
+    setIsSyncingPlayback(true);
+    const isCurrentlyPaused = roomData?.playback?.isPaused;
+    const action = isCurrentlyPaused ? 'resume' : 'pause';
+
+    try {
+      await fetch(`/api/party/${roomId}/playback`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-host-token': currentToken,
+        },
+        body: JSON.stringify({ action }),
+      });
+    } catch (err) {
+      console.error('Failed to toggle pause/resume:', err);
+    } finally {
+      setIsSyncingPlayback(false);
+    }
+  };
+
+  const handleSyncTimestamp = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const currentToken = hostToken || sessionStorage.getItem(`roseflix_party_host_${roomId}`);
+    if (!currentToken || !timestampInput.trim() || isSyncingPlayback) return;
+
+    setIsSyncingPlayback(true);
+    try {
+      await fetch(`/api/party/${roomId}/playback`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-host-token': currentToken,
+        },
+        body: JSON.stringify({
+          action: 'timestamp',
+          timestamp: timestampInput.trim(),
+        }),
+      });
+      setTimestampInput('');
+    } catch (err) {
+      console.error('Failed to sync timestamp:', err);
+    } finally {
+      setIsSyncingPlayback(false);
+    }
+  };
+
   const handleHostConfirmEnd = async () => {
     try {
-      if (hostToken) {
+      const currentToken = hostToken || sessionStorage.getItem(`roseflix_party_host_${roomId}`);
+      if (currentToken) {
         await fetch(`/api/party/${roomId}`, {
           method: 'DELETE',
-          headers: { 'x-host-token': hostToken },
+          headers: { 'x-host-token': currentToken },
         });
       }
     } catch (err) {
@@ -187,17 +310,20 @@ export default function WatchPartyView({ roomId }: WatchPartyViewProps) {
   };
 
   const handleServerChange = async (newServer: string) => {
-    if (!hostToken || !roomData) return;
+    const currentToken = hostToken || sessionStorage.getItem(`roseflix_party_host_${roomId}`);
+    if (!currentToken || !roomData) return;
+
     try {
+      setRoomData((prev) => (prev ? { ...prev, server: newServer } : prev));
+
       await fetch(`/api/party/${roomId}/server`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-host-token': hostToken,
+          'x-host-token': currentToken,
         },
         body: JSON.stringify({ serverId: newServer }),
       });
-      setRoomData({ ...roomData, server: newServer });
     } catch (err) {
       console.error('Failed to change server:', err);
     }
@@ -207,7 +333,7 @@ export default function WatchPartyView({ roomId }: WatchPartyViewProps) {
     return (
       <div className="min-h-screen pt-28 flex flex-col items-center justify-center space-y-3">
         <div className="w-10 h-10 border-4 border-[#FF1E56] border-t-transparent rounded-full animate-spin" />
-        <p className="text-sm font-semibold text-slate-300">Connecting to Watch Party...</p>
+        <p className="text-sm font-semibold text-slate-300">Connecting to real-time party stream...</p>
       </div>
     );
   }
@@ -232,7 +358,8 @@ export default function WatchPartyView({ roomId }: WatchPartyViewProps) {
     );
   }
 
-  const { media, status, isHost, server: activeServer, messages } = roomData;
+  const { media, status, server: activeServer, messages, participantCount, playback } = roomData;
+  const isHost = Boolean(hostToken || roomData.isHost);
   const isMovie = media.type === 'movie';
   const soloWatchUrl = isMovie
     ? `/watch/movie/${media.tmdbId}`
@@ -243,28 +370,49 @@ export default function WatchPartyView({ roomId }: WatchPartyViewProps) {
     media.type,
     media.tmdbId,
     media.season || 1,
-    media.episode || 1
+    media.episode || 1,
+    playback?.timestampSeconds
   );
+
+  const isPaused = Boolean(playback?.isPaused);
+  const isCountingDown = typeof countdownSeconds === 'number' && countdownSeconds > 0;
 
   return (
     <div className="min-h-screen pt-20 sm:pt-24 pb-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       {/* Top Session Status Bar */}
       <div className="mb-4 p-3.5 sm:p-4 rounded-2xl bg-[#0e0e13] border border-white/10 flex flex-wrap items-center justify-between gap-3 shadow-xl">
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
+          {/* Room ID Badge */}
           <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-[#161622] border border-[#FF1E56]/30 text-xs font-semibold text-white">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
             <span>Room: {roomId}</span>
           </div>
 
-          <div className="flex items-center gap-1.5 text-xs text-slate-300">
-            <Users className="w-4 h-4 text-[#FF1E56]" />
-            <span>Watching with friends</span>
+          {/* SSE Real-Time Status Badge */}
+          <div
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border ${
+              isLiveConnected
+                ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
+                : 'bg-amber-500/10 border-amber-500/30 text-amber-400'
+            }`}
+          >
+            <Zap className="w-3 h-3" />
+            <span>{isLiveConnected ? 'SSE Live' : 'Connecting...'}</span>
           </div>
 
+          {/* Participant Counter */}
+          <div className="flex items-center gap-1.5 text-xs text-slate-300">
+            <Users className="w-4 h-4 text-[#FF1E56]" />
+            <span>
+              {participantCount} {participantCount === 1 ? 'viewer' : 'viewers'}
+            </span>
+          </div>
+
+          {/* Host or Guest Identity */}
           {isHost ? (
             <span className="inline-flex items-center gap-1 text-[11px] font-bold uppercase px-2 py-0.5 rounded-md bg-[#FF1E56] text-white shadow-sm">
               <Crown className="w-3 h-3 fill-white" />
-              Room Creator (Host)
+              Room Host
             </span>
           ) : (
             <span className="text-[11px] font-semibold px-2 py-0.5 rounded-md bg-white/10 text-slate-300">
@@ -314,8 +462,103 @@ export default function WatchPartyView({ roomId }: WatchPartyViewProps) {
       {/* Main Grid: Video Player + Live Chat */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Left Column: Synchronized Video Player */}
-        <div className="lg:col-span-3 space-y-4">
-          {/* Server Switcher (Host-controlled sync) */}
+        <div className="lg:col-span-3 space-y-3.5">
+          {/* Host Sync Control Bar */}
+          <div className="p-3 sm:p-3.5 rounded-2xl bg-gradient-to-r from-[#12121c] via-[#161624] to-[#12121c] border border-white/10 shadow-xl flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5">
+              <div className="w-7 h-7 rounded-lg bg-[#FF1E56]/20 border border-[#FF1E56]/40 flex items-center justify-center text-[#FF1E56]">
+                <Sliders className="w-4 h-4" />
+              </div>
+              <div>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                  {isHost ? 'Host Sync Controls' : 'Room Synchronization'}
+                </span>
+                <span className="text-xs font-semibold text-white flex items-center gap-1.5">
+                  <span
+                    className={`w-2 h-2 rounded-full ${
+                      isPaused ? 'bg-amber-400 animate-pulse' : 'bg-emerald-400'
+                    }`}
+                  />
+                  {isPaused ? 'Stream Paused by Host' : 'Stream Active'}
+                  {playback?.timestampFormatted && (
+                    <span className="text-[#FF85A1] text-[11px] font-mono ml-1 px-1.5 py-0.5 rounded bg-white/5">
+                      ⏱️ {playback.timestampFormatted}
+                    </span>
+                  )}
+                </span>
+              </div>
+            </div>
+
+            {/* Host Controls */}
+            {isHost ? (
+              <div className="flex flex-wrap items-center gap-2">
+                {/* Pause / Resume Button */}
+                <button
+                  onClick={handleTogglePause}
+                  disabled={isSyncingPlayback}
+                  className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shadow-lg cursor-pointer ${
+                    isPaused
+                      ? 'bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white shadow-emerald-500/30'
+                      : 'bg-gradient-to-r from-[#FF1E56] to-[#D90429] hover:from-[#FF007F] hover:to-[#FF1E56] text-white shadow-[#FF1E56]/30'
+                  }`}
+                  title={isPaused ? 'Resume with 3-second countdown' : 'Pause for everyone'}
+                >
+                  {isPaused ? (
+                    <>
+                      <Play className="w-3.5 h-3.5 fill-white" />
+                      <span>Resume Party (3s Countdown)</span>
+                    </>
+                  ) : (
+                    <>
+                      <Pause className="w-3.5 h-3.5 fill-white" />
+                      <span>Pause for Everyone</span>
+                    </>
+                  )}
+                </button>
+
+                {/* Timestamp Jump Input & Button */}
+                <form onSubmit={handleSyncTimestamp} className="flex items-center gap-1.5">
+                  <div className="relative">
+                    <Clock className="w-3.5 h-3.5 text-[#FF85A1] absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    <input
+                      type="text"
+                      value={timestampInput}
+                      onChange={(e) => setTimestampInput(e.target.value)}
+                      placeholder="e.g. 24:15"
+                      className="w-24 pl-7 pr-2 py-1.5 rounded-xl bg-[#1a1a28] border border-white/10 text-white placeholder-slate-500 text-xs focus:outline-none focus:border-[#FF1E56] font-mono"
+                      title="Enter mm:ss or timestamp to synchronize viewers"
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={!timestampInput.trim() || isSyncingPlayback}
+                    className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-[#222232] hover:bg-[#2b2b3f] text-slate-200 hover:text-white border border-white/10 disabled:opacity-40 transition-colors cursor-pointer"
+                  >
+                    Sync Time
+                  </button>
+                </form>
+              </div>
+            ) : (
+              /* Guest Sync Status & Manual Jump Button */
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] text-slate-400 italic">
+                  {isPaused ? 'Waiting for host to resume...' : 'Synchronized with host'}
+                </span>
+                {playback?.timestampFormatted && (
+                  <button
+                    onClick={() => setIframeKey((k) => k + 1)}
+                    className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-white/10 hover:bg-white/15 text-[#FF85A1] transition-colors cursor-pointer"
+                    title="Reload player at host timestamp"
+                  >
+                    <RotateCcw className="w-3 h-3" />
+                    <span>Sync to {playback.timestampFormatted}</span>
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Server Switcher Bar */}
           <div className="flex flex-wrap items-center justify-between gap-3 p-2.5 rounded-xl bg-[#111116] border border-white/5 text-xs">
             <div className="flex items-center gap-2">
               <span className="text-slate-400 font-semibold uppercase tracking-wider text-[11px]">
@@ -344,15 +587,15 @@ export default function WatchPartyView({ roomId }: WatchPartyViewProps) {
               </div>
             ) : (
               <span className="text-[11px] text-slate-500 italic">
-                Synchronized by host
+                Server chosen by host
               </span>
             )}
           </div>
 
-          {/* Embed Video Player Frame */}
+          {/* Embed Video Player Frame with Synchronized Overlays */}
           <div className="relative aspect-video w-full rounded-2xl overflow-hidden bg-black shadow-2xl border border-white/10">
-            {/* If Room is Ended, Show Overlay */}
-            {status === 'ended' ? (
+            {/* 1. ROOM ENDED OVERLAY */}
+            {status === 'ended' && (
               <div className="absolute inset-0 z-40 bg-black/90 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center space-y-4">
                 <div className="w-16 h-16 rounded-full bg-red-500/10 border border-red-500/30 flex items-center justify-center text-red-400 shadow-xl">
                   <ShieldAlert className="w-8 h-8" />
@@ -380,16 +623,73 @@ export default function WatchPartyView({ roomId }: WatchPartyViewProps) {
                   </Link>
                 </div>
               </div>
-            ) : (
-              <iframe
-                src={currentEmbedUrl}
-                title={media.title}
-                className="w-full h-full border-0"
-                referrerPolicy="origin"
-                allowFullScreen
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-              />
             )}
+
+            {/* 2. SYNCHRONIZED COUNTDOWN OVERLAY (3... 2... 1... PLAY!) */}
+            {isCountingDown && (
+              <div className="absolute inset-0 z-35 bg-black/85 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center space-y-3">
+                <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-gradient-to-tr from-[#FF1E56]/30 via-white/10 to-[#FF85A1]/30 border-2 border-[#FF1E56] flex items-center justify-center shadow-[0_0_40px_rgba(255,30,86,0.9)] animate-pulse">
+                  <span className="text-5xl sm:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-b from-white to-[#FF85A1]">
+                    {countdownSeconds}
+                  </span>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-lg font-bold text-white tracking-wide">
+                    Resuming Stream in {countdownSeconds}...
+                  </p>
+                  <p className="text-xs text-[#FF85A1] font-semibold">
+                    All party viewers synchronized
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* 3. SYNCHRONIZED PAUSE OVERLAY */}
+            {isPaused && !isCountingDown && (
+              <div className="absolute inset-0 z-30 bg-black/85 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center space-y-4">
+                <div className="w-16 h-16 rounded-full bg-[#FF1E56]/15 border border-[#FF1E56]/40 flex items-center justify-center text-[#FF1E56] shadow-[0_0_30px_rgba(255,30,86,0.7)] animate-pulse">
+                  <Pause className="w-8 h-8 fill-[#FF1E56]" />
+                </div>
+                <div className="space-y-1.5">
+                  <h3 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
+                    Session Paused by Host
+                  </h3>
+                  <p className="text-xs sm:text-sm text-slate-300 max-w-md">
+                    {isHost
+                      ? 'You have paused the room. Click Resume Party to initiate a 3-second synchronized countdown for all viewers.'
+                      : 'The host has paused the session. Grab popcorn — the stream will resume once the host unpauses.'}
+                  </p>
+                  {playback?.timestampFormatted && (
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 border border-white/10 text-xs font-mono text-[#FF85A1] mt-1">
+                      <Clock className="w-3.5 h-3.5" />
+                      <span>Paused at {playback.timestampFormatted}</span>
+                    </div>
+                  )}
+                </div>
+
+                {isHost && (
+                  <button
+                    onClick={handleTogglePause}
+                    disabled={isSyncingPlayback}
+                    className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.5)] transition-all cursor-pointer"
+                  >
+                    <Play className="w-4 h-4 fill-white" />
+                    <span>Resume Party (3s Countdown)</span>
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* Active Video Embed */}
+            <iframe
+              key={iframeKey}
+              src={currentEmbedUrl}
+              title={media.title}
+              className="w-full h-full border-0"
+              referrerPolicy="origin"
+              allowFullScreen
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            />
           </div>
 
           {/* Media Info Panel */}
@@ -399,7 +699,7 @@ export default function WatchPartyView({ roomId }: WatchPartyViewProps) {
                 <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-[#FF1E56] text-white">
                   {isMovie ? 'Movie' : `S${media.season} E${media.episode}`}
                 </span>
-                <span className="text-xs text-[#FF85A1] font-semibold">Watch Party Sync</span>
+                <span className="text-xs text-[#FF85A1] font-semibold">Real-Time Sync</span>
               </div>
               <h2 className="text-lg sm:text-xl font-bold text-white">{media.title}</h2>
             </div>
@@ -412,8 +712,8 @@ export default function WatchPartyView({ roomId }: WatchPartyViewProps) {
           </div>
         </div>
 
-        {/* Right Column: Live Chat & Reactions */}
-        <div className="lg:col-span-1 flex flex-col h-[520px] rounded-2xl bg-[#0e0e13] border border-white/10 overflow-hidden shadow-2xl">
+        {/* Right Column: Instant Live Chat */}
+        <div className="lg:col-span-1 flex flex-col h-[560px] rounded-2xl bg-[#0e0e13] border border-white/10 overflow-hidden shadow-2xl">
           {/* Chat Header */}
           <div className="p-3.5 border-b border-white/10 bg-[#12121a] flex items-center justify-between">
             <div className="flex items-center gap-2">

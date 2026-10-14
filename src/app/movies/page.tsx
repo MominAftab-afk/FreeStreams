@@ -3,16 +3,60 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Film, Filter, ChevronLeft, ChevronRight } from 'lucide-react';
 import MediaCard from '@/components/media/MediaCard';
+import Breadcrumbs from '@/components/layout/Breadcrumbs';
+import JsonLd from '@/components/seo/JsonLd';
 import { discoverMovies, getMovieGenres } from '@/lib/tmdb';
-
-export const metadata: Metadata = {
-  title: 'Watch Movies Online Free in HD - RoseFlix',
-  description:
-    'Browse thousands of high definition movies across Action, Comedy, Sci-Fi, Drama, Horror and more. Instant streaming, no subscription needed.',
-};
+import { getSiteUrl, buildBreadcrumbSchema } from '@/lib/seo';
 
 interface MoviesPageProps {
   searchParams: Promise<{ genre?: string; page?: string; sort?: string }>;
+}
+
+export async function generateMetadata({ searchParams }: MoviesPageProps): Promise<Metadata> {
+  const sParams = await searchParams;
+  const siteUrl = getSiteUrl();
+  const selectedGenre = sParams.genre;
+  const page = sParams.page ? parseInt(sParams.page, 10) : 1;
+
+  let genreName = '';
+  if (selectedGenre) {
+    try {
+      const genres = await getMovieGenres();
+      genreName = genres.find((g) => g.id.toString() === selectedGenre)?.name || '';
+    } catch {}
+  }
+
+  const title = genreName
+    ? `Watch ${genreName} Movies Online Free in Full HD${page > 1 ? ` (Page ${page})` : ''} | RoseFlix`
+    : `Watch Movies Online Free in Full HD${page > 1 ? ` (Page ${page})` : ''} | RoseFlix`;
+
+  const description = genreName
+    ? `Stream top ${genreName} movies in full 1080p HD online on RoseFlix. Fast multi-server streaming with English subtitles and zero buffering.`
+    : 'Browse thousands of high-definition movies across Action, Comedy, Sci-Fi, Drama, Horror, and more. Free instant streaming on RoseFlix.';
+
+  const canonicalUrl = `${siteUrl}/movies${selectedGenre ? `?genre=${selectedGenre}` : ''}`;
+
+  return {
+    title: {
+      absolute: title,
+    },
+    description,
+    alternates: {
+      canonical: canonicalUrl,
+    },
+    openGraph: {
+      type: 'website',
+      url: canonicalUrl,
+      title,
+      description,
+      siteName: 'RoseFlix',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+    },
+  };
 }
 
 export default async function MoviesPage({ searchParams }: MoviesPageProps) {
@@ -20,6 +64,7 @@ export default async function MoviesPage({ searchParams }: MoviesPageProps) {
   const selectedGenre = sParams.genre;
   const currentPage = parseInt(sParams.page || '1', 10);
   const sortBy = sParams.sort || 'popularity.desc';
+  const siteUrl = getSiteUrl();
 
   const [genres, moviesData] = await Promise.all([
     getMovieGenres(),
@@ -31,12 +76,27 @@ export default async function MoviesPage({ searchParams }: MoviesPageProps) {
   ]);
 
   const movies = moviesData.results.map((m) => ({ ...m, media_type: 'movie' as const }));
-  const totalPages = Math.min(moviesData.total_pages, 500); // TMDB caps page at 500
+  const totalPages = Math.min(moviesData.total_pages, 500);
 
   const activeGenreName = genres.find((g) => g.id.toString() === selectedGenre)?.name;
 
+  // Breadcrumbs items
+  const breadcrumbItems = [
+    { name: 'Movies', url: `${siteUrl}/movies` },
+    ...(activeGenreName
+      ? [{ name: `${activeGenreName} Movies`, url: `${siteUrl}/movies?genre=${selectedGenre}` }]
+      : []),
+  ];
+  const breadcrumbSchema = buildBreadcrumbSchema(breadcrumbItems);
+
   return (
     <div className="min-h-screen pt-24 pb-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      {/* Schema.org Breadcrumb */}
+      <JsonLd data={breadcrumbSchema} />
+
+      {/* Semantic Visible Breadcrumbs */}
+      <Breadcrumbs items={breadcrumbItems} />
+
       {/* Page Title & Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
         <div>
@@ -45,7 +105,7 @@ export default async function MoviesPage({ searchParams }: MoviesPageProps) {
             Cinema Catalog
           </div>
           <h1 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
-            {activeGenreName ? `${activeGenreName} Movies` : 'All Movies'}
+            {activeGenreName ? `${activeGenreName} Movies` : 'All Movies in Full HD'}
           </h1>
           <p className="text-sm text-slate-400 mt-1">
             Discover the highest-rated blockbusters and trending films available to stream right now.

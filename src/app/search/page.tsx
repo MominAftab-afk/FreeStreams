@@ -6,13 +6,40 @@ import MediaCard from '@/components/media/MediaCard';
 import AdBanner from '@/components/ads/AdBanner';
 import { searchMulti } from '@/lib/tmdb';
 
-export const metadata: Metadata = {
-  title: 'Search Movies & TV Shows - RoseFlix',
-  description: 'Search our expansive catalog of movies and television series to stream in full 1080p HD.',
-};
+import { getSiteUrl } from '@/lib/seo';
 
 interface SearchPageProps {
   searchParams: Promise<{ q?: string; type?: string }>;
+}
+
+export async function generateMetadata({ searchParams }: SearchPageProps): Promise<Metadata> {
+  const sParams = await searchParams;
+  const siteUrl = getSiteUrl();
+  const query = sParams.q?.trim() || '';
+
+  const title = query
+    ? `Search Results for "${query}" | RoseFlix`
+    : 'Search Movies & TV Shows in 1080p HD | RoseFlix';
+
+  const description = query
+    ? `Stream movies and television series matching "${query}" in full 1080p HD online on RoseFlix.`
+    : 'Search our expansive catalog of movies and television series to stream in full 1080p HD on RoseFlix.';
+
+  const canonicalUrl = `${siteUrl}/search${query ? `?q=${encodeURIComponent(query)}` : ''}`;
+
+  return {
+    title: {
+      absolute: title,
+    },
+    description,
+    alternates: {
+      canonical: canonicalUrl,
+    },
+    robots: {
+      index: false,
+      follow: true,
+    },
+  };
 }
 
 export default async function SearchPage({ searchParams }: SearchPageProps) {

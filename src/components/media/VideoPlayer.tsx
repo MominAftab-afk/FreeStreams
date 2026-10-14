@@ -58,17 +58,25 @@ export default function VideoPlayer({
   const embedUrl = getEmbedUrl(selectedServer, type, tmdbId, season, episode);
 
   const handleStartPlay = () => {
-    // Check if ads/popunder is enabled
+    // Check if monetization/smartlink is enabled
     const adsEnabled = process.env.NEXT_PUBLIC_ENABLE_ADS === 'true';
-    const directLink = process.env.NEXT_PUBLIC_DIRECT_LINK_URL;
+    const directLink = process.env.NEXT_PUBLIC_DIRECT_LINK_URL?.trim();
 
-    if (adsEnabled && directLink) {
-      const lastPop = localStorage.getItem('roseflix_last_pop');
-      const now = Date.now();
-      // 45 minute frequency cap
-      if (!lastPop || now - parseInt(lastPop, 10) > 45 * 60 * 1000) {
-        localStorage.setItem('roseflix_last_pop', now.toString());
-        window.open(directLink, '_blank');
+    if (
+      adsEnabled &&
+      directLink &&
+      (directLink.startsWith('http://') || directLink.startsWith('https://') || directLink.startsWith('//'))
+    ) {
+      const sessionKey = `roseflix_smartlink_${tmdbId}`;
+      const alreadyTriggered = sessionStorage.getItem(sessionKey);
+
+      if (!alreadyTriggered) {
+        try {
+          sessionStorage.setItem(sessionKey, 'true');
+          window.open(directLink, '_blank', 'noopener,noreferrer');
+        } catch (err) {
+          console.warn('Smartlink direct link trigger error:', err);
+        }
       }
     }
 

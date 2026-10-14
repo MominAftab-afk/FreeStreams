@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getPartyRoom, updateHostHeartbeat, endPartyRoom } from '@/lib/partyStore';
+import { getPartyRoom, updateHostHeartbeat, endPartyRoom, formatRoomState } from '@/lib/partyStore';
 
 export async function GET(
   request: NextRequest,
@@ -13,24 +13,14 @@ export async function GET(
   }
 
   // Check if request is from host to update heartbeat
-  const hostToken = request.headers.get('x-host-token');
+  const hostToken = request.headers.get('x-host-token') || request.nextUrl.searchParams.get('token');
   const isHost = Boolean(hostToken && hostToken === room.hostToken);
 
-  if (isHost) {
-    updateHostHeartbeat(roomId, hostToken!);
+  if (isHost && hostToken) {
+    updateHostHeartbeat(roomId, hostToken);
   }
 
-  return NextResponse.json({
-    roomId: room.roomId,
-    hostName: room.hostName,
-    media: room.media,
-    server: room.server,
-    status: room.status,
-    createdAt: room.createdAt,
-    participantCount: room.participantCount,
-    messages: room.messages,
-    isHost,
-  });
+  return NextResponse.json(formatRoomState(room, isHost));
 }
 
 // Host ends the room
